@@ -1,110 +1,46 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useState } from "react";
+import useTheme from "./hooks/useTheme.js";
+import useScrollSpy from "./hooks/useScrollSpy.js";
 import {
   profile,
-  graphNodes,
-  stats,
-  experience,
-  projects,
-  manifest,
-  credentials,
+  navigation,
+  hero,
+  about,
+  skills,
+  education,
+  achievements,
+  certifications,
+  contact,
 } from "./data.js";
 
-function Reveal({ children, className = "" }) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+const ExperienceSection = lazy(() => import("./sections/ExperienceSection.jsx"));
+const ProjectsSection = lazy(() => import("./sections/ProjectsSection.jsx"));
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
+function Nav({ activeSection, onToggleTheme }) {
   return (
-    <div ref={ref} className={`reveal ${visible ? "in" : ""} ${className}`}>
-      {children}
-    </div>
-  );
-}
-
-function ModuleGraph() {
-  const shell = { x: 450, y: 130 };
-  return (
-    <div className="graph">
-      <svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        {graphNodes.map((n) => (
-          <line
-            key={`edge-${n.id}`}
-            className="edge"
-            x1={shell.x}
-            y1={shell.y}
-            x2={n.x}
-            y2={n.y}
-          />
-        ))}
-        <circle className="node-circle shell" cx={shell.x} cy={shell.y} r="42" />
-        <text className="node-label shell" x={shell.x} y={shell.y - 4} textAnchor="middle">
-          shell
-        </text>
-        <text
-          className="node-label shell"
-          x={shell.x}
-          y={shell.y + 12}
-          textAnchor="middle"
-          style={{ fill: "var(--text-dim)", fontSize: 9 }}
-        >
-          {profile.name.toLowerCase()}
-        </text>
-
-        {graphNodes.map((n) => (
-          <g key={n.id}>
-            <circle className="node-circle" cx={n.x} cy={n.y} r="30" />
-            <text className="node-label" x={n.x} y={n.y + 4} textAnchor="middle">
-              {n.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <div className="graph-fallback">
-        shell({profile.name.toLowerCase()}) → [{graphNodes.map((n) => n.label).join(", ")}]
-      </div>
-    </div>
-  );
-}
-
-function Nav() {
-  const links = [
-    ["about", "about"],
-    ["experience", "experience"],
-    ["projects", "projects"],
-    ["skills", "skills"],
-    ["contact", "contact"],
-  ];
-  return (
-    <header>
-      <nav>
-        <div className="logo">
-          {profile.name.toLowerCase()}
-          <span>.dev</span>
+    <header className="site-header">
+      <nav className="nav-bar">
+        <div className="brand-group">
+          <div className="brand-name">{profile.name}</div>
+          <div className="brand-role">{profile.role}</div>
         </div>
-        <ul className="navlinks">
-          {links.map(([href, label]) => (
-            <li key={href}>
-              <a href={`#${href}`}>{label}</a>
+        <ul className="nav-links">
+          {navigation.map((item) => (
+            <li key={item.id}>
+              <a href={`#${item.id}`} className={activeSection === item.id ? "active" : ""}>
+                {item.label}
+              </a>
             </li>
           ))}
         </ul>
+        <div className="nav-actions">
+          <button type="button" className="theme-toggle" onClick={onToggleTheme}>
+            Theme
+          </button>
+          <a href={`mailto:${profile.email}`} className="btn btn-primary">
+            Contact
+          </a>
+        </div>
       </nav>
     </header>
   );
@@ -112,182 +48,245 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="hero" style={{ borderTop: "none" }}>
-      <div className="eyebrow">
-        {profile.status} · {profile.location}
+    <section id="hero" className="hero-section">
+      <div className="hero-inner">
+        <div className="hero-copy">
+          <span className="hero-badge">{profile.status}</span>
+          <h1>{hero.title}</h1>
+          <p>{hero.description}</p>
+          <div className="hero-actions">
+            {hero.ctas.map((cta) => (
+              <a key={cta.label} href={cta.href} className={`btn ${cta.variant === "primary" ? "btn-primary" : "btn-secondary"}`}>
+                {cta.label}
+              </a>
+            ))}
+          </div>
+          <div className="hero-links">
+            <a href={profile.github} target="_blank" rel="noreferrer">GitHub</a>
+            <a href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+            <a href={`mailto:${profile.email}`}>Email</a>
+          </div>
+        </div>
+        <div className="hero-panel" aria-hidden="true">
+          <div className="hero-panel-inner">
+            <div className="panel-title">Hello.</div>
+            <div className="panel-copy">
+              I create clean, high-impact frontend systems for SaaS teams with a focus on performance, accessibility, and design polish.
+            </div>
+            <div className="panel-meta">
+              <span>{profile.location}</span>
+              <span>{profile.role}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <h1>
-        Frontend engineer who ships <span className="accent">federated</span>, fast, and
-        honest interfaces.
-      </h1>
-      <p className="tagline">
-        3+ years building React micro-frontends and performance-tuned dashboards for
-        Fortune 500 FMCG teams — Colgate-Palmolive and PepsiCo among them.
-      </p>
-      <div className="hero-cta">
-        <a href="#projects" className="btn btn-primary">
-          View work
-        </a>
-        <a href="#contact" className="btn btn-secondary">
-          Get in touch
-        </a>
-      </div>
-      <Reveal>
-        <ModuleGraph />
-      </Reveal>
     </section>
   );
 }
 
-function About() {
+function AboutSection() {
   return (
-    <section id="about">
+    <section id="about" className="section about-section">
       <div className="section-head">
         <span className="section-num">01</span>
         <h2>About</h2>
       </div>
       <div className="about-grid">
-        <Reveal className="about-text">
-          <p>
-            I'm a <strong>{profile.role}</strong> at Incture Technologies in Bengaluru,
-            where I spend most of my time inside <strong>pricing dashboards</strong> used
-            by Fortune 500 FMCG teams — the kind of interfaces where a slow render or a
-            stale cache has real business cost.
-          </p>
-          <p>
-            My focus sits at the intersection of <strong>micro-frontend architecture</strong>{" "}
-            (Webpack 5 Module Federation), <strong>state management</strong> (Redux
-            Toolkit), and <strong>web performance</strong> — breaking large frontends into
-            independently deployable pieces without breaking the experience that holds
-            them together.
-          </p>
-          <p>
-            I care about code that a teammate can pick up cold, and interfaces that stay
-            usable under real-world data, not demo data.
-          </p>
-        </Reveal>
-        <Reveal>
-          {stats.map((s) => (
-            <div className="stat-card" key={s.label}>
-              <div className="stat-num">{s.num}</div>
-              <div className="stat-label">{s.label}</div>
-            </div>
-          ))}
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function Experience() {
-  return (
-    <section id="experience">
-      <div className="section-head">
-        <span className="section-num">02</span>
-        <h2>Experience</h2>
-      </div>
-      <Reveal>
-        <div className="log">
-          {experience.map((e) => (
-            <div className="log-entry" key={e.role + e.org}>
-              <div className="log-meta">
-                {e.dates}
-                <br />
-                {e.active && <span className="tag">● active</span>}
-              </div>
-              <div className="log-body">
-                <div className="log-role">{e.role}</div>
-                <div className="log-org">{e.org}</div>
-                <p>{e.summary}</p>
-                <ul className="log-list">
-                  {e.highlights.map((h) => (
-                    <li key={h}>{h}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
+        <div className="about-copy">
+          <p className="about-intro">{about.summary}</p>
+          <div className="about-cards">
+            {about.sections.map((section) => (
+              <article key={section.title} className="about-card">
+                <h3>{section.title}</h3>
+                <p>{section.copy}</p>
+              </article>
+            ))}
+          </div>
         </div>
-      </Reveal>
-    </section>
-  );
-}
-
-function Projects() {
-  return (
-    <section id="projects">
-      <div className="section-head">
-        <span className="section-num">03</span>
-        <h2>Selected work</h2>
-      </div>
-      <div className="projects">
-        {projects.map((p) => (
-          <Reveal key={p.title}>
-            <div className="project-card">
-              <div className="project-file">{p.file}</div>
-              <div className="project-title">{p.title}</div>
-              <p className="project-desc">{p.desc}</p>
-              <div className="chip-row">
-                {p.tags.map((t) => (
-                  <span className="chip" key={t}>
-                    {t}
-                  </span>
-                ))}
+        <aside className="about-aside">
+          <div className="stats-grid">
+            {about.stats.map((stat) => (
+              <div key={stat.label} className="stat-card">
+                <span className="stat-value">{stat.value}</span>
+                <span className="stat-label">{stat.label}</span>
               </div>
-            </div>
-          </Reveal>
-        ))}
+            ))}
+          </div>
+          <div className="tech-pill-grid">
+            {about.tech.map((tech) => (
+              <span key={tech} className="tech-pill">{tech}</span>
+            ))}
+          </div>
+        </aside>
       </div>
     </section>
   );
 }
 
-function Skills() {
+function SkillsSection() {
   return (
-    <section id="skills">
+    <section id="skills" className="section skills-section">
       <div className="section-head">
         <span className="section-num">04</span>
-        <h2>Stack</h2>
+        <h2>Skills</h2>
       </div>
-      <Reveal>
-        <div className="manifest">
-          <div className="manifest-comment">
-            // package.json — {profile.name.toLowerCase()}/frontend-toolkit
-          </div>
-          {manifest.map((m) => (
-            <div className="manifest-line" key={m.key}>
-              <span className="manifest-key">"{m.key}"</span>: [
-              {m.val.map((v, i) => (
-                <React.Fragment key={v}>
-                  <span className="manifest-val">"{v}"</span>
-                  {i < m.val.length - 1 ? ", " : ""}
-                </React.Fragment>
+      <div className="skill-grid">
+        {skills.map((group) => (
+          <div key={group.category} className="skill-card">
+            <h3>{group.category}</h3>
+            <div className="skill-list">
+              {group.items.map((skill) => (
+                <div key={skill.label} className="skill-item">
+                  <div className="skill-meta">
+                    <span>{skill.label}</span>
+                    <span>{skill.level}%</span>
+                  </div>
+                  <div className="skill-track">
+                    <div className="skill-fill" style={{ width: `${skill.level}%` }} />
+                  </div>
+                </div>
               ))}
-              ],
             </div>
-          ))}
-        </div>
-      </Reveal>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }
 
-function Credentials() {
+function EducationSection() {
   return (
-    <section id="credentials">
+    <section id="education" className="section education-section">
       <div className="section-head">
         <span className="section-num">05</span>
-        <h2>Education &amp; recognition</h2>
+        <h2>Education</h2>
       </div>
-      <div className="credentials">
-        {credentials.map((c) => (
-          <Reveal key={c.title}>
-            <div className="cred-card">
-              <div className="cred-title">{c.title}</div>
-              <div className="cred-sub">{c.sub}</div>
+      <div className="education-card">
+        {education.map((entry) => (
+          <article key={entry.institution} className="education-entry">
+            <div className="education-top">
+              <p className="education-degree">{entry.degree}</p>
+              <span className="education-period">{entry.period}</span>
             </div>
-          </Reveal>
+            <p className="education-school">{entry.institution}</p>
+            <p className="education-note">{entry.note}</p>
+          </article>
         ))}
+      </div>
+    </section>
+  );
+}
+
+function AchievementsSection() {
+  return (
+    <section id="achievements" className="section achievements-section">
+      <div className="section-head">
+        <span className="section-num">06</span>
+        <h2>Achievements</h2>
+      </div>
+      <div className="achievement-grid">
+        {achievements.map((item) => (
+          <article key={item.title} className="achievement-card">
+            <span className="achievement-year">{item.year}</span>
+            <h3>{item.title}</h3>
+            <p>{item.detail}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function CertificationsSection() {
+  return (
+    <section id="certifications" className="section certifications-section">
+      <div className="section-head">
+        <span className="section-num">07</span>
+        <h2>Certifications</h2>
+      </div>
+      <div className="certification-grid">
+        {certifications.map((cert) => (
+          <article key={cert.title} className="cert-card">
+            <h3>{cert.title}</h3>
+            <p className="cert-issuer">{cert.issuer}</p>
+            <p className="cert-note">{cert.note}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ContactSection() {
+  const [messageSent, setMessageSent] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setMessageSent(true);
+    setFormData({ name: "", email: "", message: "" });
+  };
+
+  return (
+    <section id="contact" className="section contact-section">
+      <div className="section-head">
+        <span className="section-num">08</span>
+        <h2>Contact</h2>
+      </div>
+      <div className="contact-grid">
+        <div className="contact-copy">
+          <p>{contact.description}</p>
+          <div className="contact-details">
+            {contact.details.map((item) => (
+              <div key={item.label} className="contact-detail-item">
+                <span>{item.label}</span>
+                {item.href ? (
+                  <a href={item.href} target="_blank" rel="noreferrer">
+                    {item.value}
+                  </a>
+                ) : (
+                  <p>{item.value}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        <form className="contact-form" onSubmit={handleSubmit}>
+          <label>
+            Name
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+              placeholder="Your name"
+              required
+            />
+          </label>
+          <label>
+            Email
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+              placeholder="you@example.com"
+              required
+            />
+          </label>
+          <label>
+            Message
+            <textarea
+              rows="5"
+              value={formData.message}
+              onChange={(event) => setFormData({ ...formData, message: event.target.value })}
+              placeholder="Tell me about your project"
+              required
+            />
+          </label>
+          <button type="submit" className="btn btn-primary">
+            Send message
+          </button>
+          {messageSent && <p className="message-sent">Message ready. I’ll reply soon.</p>}
+        </form>
       </div>
     </section>
   );
@@ -295,40 +294,46 @@ function Credentials() {
 
 function Footer() {
   return (
-    <footer id="contact" className="wrap">
-      <div className="contact-title">
-        Let's <span className="accent">federate</span> something together.
+    <footer className="footer">
+      <div className="footer-inner">
+        <p>Built with React · Designed for modern SaaS products.</p>
+        <div className="footer-links">
+          <a href={profile.github} target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a href={profile.linkedin} target="_blank" rel="noreferrer">
+            LinkedIn
+          </a>
+        </div>
       </div>
-      <p className="contact-sub">
-        Open to Frontend and Full-Stack roles. Reach out directly — I reply fast.
-      </p>
-      <div className="contact-links">
-        <a href={`mailto:${profile.email}`} className="btn btn-primary">
-          {profile.email}
-        </a>
-        <a href={profile.linkedin} className="btn btn-secondary" target="_blank" rel="noreferrer">
-          LinkedIn
-        </a>
-        <a href={profile.github} className="btn btn-secondary" target="_blank" rel="noreferrer">
-          GitHub
-        </a>
-      </div>
-      <div className="foot-note">built with react-shaped hands, deployed from bengaluru.</div>
+      <button type="button" className="scroll-top" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+        Back to top
+      </button>
     </footer>
   );
 }
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
+  const activeSection = useScrollSpy(navigation.map((item) => item.id));
+
   return (
     <>
-      <Nav />
-      <main className="wrap">
+      <Nav activeSection={activeSection} onToggleTheme={toggleTheme} />
+      <main className="page-wrap">
         <Hero />
-        <About />
-        <Experience />
-        <Projects />
-        <Skills />
-        <Credentials />
+        <AboutSection />
+        <Suspense fallback={<div className="section-loading">Loading experience…</div>}>
+          <ExperienceSection />
+        </Suspense>
+        <Suspense fallback={<div className="section-loading">Loading projects…</div>}>
+          <ProjectsSection />
+        </Suspense>
+        <SkillsSection />
+        <EducationSection />
+        <AchievementsSection />
+        <CertificationsSection />
+        <ContactSection />
       </main>
       <Footer />
     </>
